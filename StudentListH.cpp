@@ -3,6 +3,8 @@
 #include <cstring>
 #include <vector>
 #include <iomanip>
+#include <cstring>
+#include <fstream>
 
 using namespace std;
 
@@ -24,26 +26,37 @@ void nullify(Student** HashTable, int maxLen){
 	}
 }
 
-Student* getRandomStudent(){
+Student* getRandomStudent(int latestID, char** firstNames, char** lastNames){
 	Student *random = new Student();
+	strcpy(random->firstName, firstNames[(rand() % 1000)+1]);
+	strcpy(random->lastName, lastNames[(rand() % 1000)+1]);
+	random->ID = latestID + 1;
+	random->GPA = ((float) (rand()%400)+1)/100;
 	return random;
 }
 
 int main(){
 	//Makes HashTable hashTABLE;
-	Student* HashTable[100];
 	int hashLen = 100;
+	int tempHashLen = hashLen;
+	Student** HashTable = new Student*[hashLen];
 	nullify(HashTable, hashLen);
+
 	//Set up allowed input prompts
 	char del[] = "DELETE";
 	char add[] = "ADD";
 	char quit[] = "QUIT";
 	char print[] = "PRINT";
+	char addr[] = "ADDR";
 
 	char command[100];
 	//get first names and last names array
 	char* firstNames[1000];
 	char* lastNames[1000];
+
+	int latestID = 100000;
+	int addrNumber;
+	int numberOfLinkedStudents;
 	
 	ifstream firstNameFile("firstNames.txt");
 	for (int i=0; i<1000; i++){
@@ -60,9 +73,12 @@ int main(){
 	int inputID;
 	bool quitVar = false;
 	int addHashIndex;
+
+	bool doubleHash = false;
+	
 	Student* temp;
 	//Welcome statement
-	cout << "Welcome to Student List. Use any of these 4 keywords: ADD, DELETE, PRINT, QUIT" << endl;
+	cout << "Welcome to Student List Hash Table. Use any of these 5 keywords: ADD, DELETE, PRINT, QUIT, ADDR" << endl;
 	while(not quitVar){ //While the program has not quitted yet:
 		cin >> command; //Take in a command and get rid of any excess characters
 		command[6] = '\0';
@@ -96,14 +112,14 @@ int main(){
 				HashTable[addHashIndex] = inputStudent; //Adds input student to the hashTABLE
 			}
 			else{
-				int numberOfLinkedStudents = 1;
+				numberOfLinkedStudents = 1;
 				temp = HashTable[addHashIndex];
 				while (temp->next != NULL){
 					temp = temp->next;
 					numberOfLinkedStudents += 1;
 				}
 				if (numberOfLinkedStudents == 3){
-					cout << "Can't have more than 3 collisions when chaining!" << endl;
+					doubleHash = true;
 				}
 				else{
 					temp->next = inputStudent;
@@ -128,9 +144,75 @@ int main(){
 				}
 			}
 		}
+		else if (strcmp(command, addr) == 0){ //If you entered ADDR: add random students
+			cout << "How many random students to add?: ";
+			cin >> addrNumber;
+			for (int i=0; i<addrNumber; i++){ //add addrNumber of random students
+				Student *random = getRandomStudent(latestID, firstNames, lastNames);
+				addHashIndex = getHashID(random, hashLen);
+				if (HashTable[addHashIndex] == NULL){
+					HashTable[addHashIndex] = random;
+				}
+				else{
+					numberOfLinkedStudents = 1;
+					temp = HashTable[addHashIndex];
+					while (temp->next != NULL){
+						temp = temp->next;
+						numberOfLinkedStudents += 1;
+					}
+					if (numberOfLinkedStudents == 3){
+						//double hash table length
+						doubleHash = true;
+					}
+					else{
+						temp->next = random;
+					}
+				}
+				latestID += 1;
+			}
+			cout << "Added random student(s)." << endl;
+		}
 		else{ //If you entered non of the above:
 			cout << "Unrecognized input. Please try again." << endl;
 		}
+			
+		while(doubleHash){
+			doubleHash = false;
+			tempHashLen = tempHashLen * 2;
+			Student** tempHash = new Student*[tempHashLen];
+			nullify(tempHash, tempHashLen);
+			Student* current;
+
+			for (int i=0; i<hashLen; i++){
+				current = HashTable[i];
+				while(current != NULL){
+					//add current to tempHash
+					if (tempHash[getHashID(current, tempHashLen)] != NULL){
+						int lengthOfLinks = 1;
+						Student* temp = tempHash[getHashID(current, tempHashLen)];
+						while (temp->next != NULL){
+							temp = temp->next;
+							lengthOfLinks += 1;
+						}
+						if (lengthOfLinks == 3){
+							doubleHash = true;
+						}
+						else{
+							temp->next = current;
+						}
+					}
+					else{
+						tempHash[getHashID(current, tempHashLen)] = current;
+					}
+				}
+			}
+			//if works
+			if (not doubleHash){
+				hashLen = tempHashLen;
+				HashTable = tempHash;
+			}
+		}	
+
 	//After quitVar turns true, program ends
 	}
 	return 0;
