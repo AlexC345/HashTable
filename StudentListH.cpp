@@ -161,12 +161,12 @@ int main(){
 					temp = temp->next;
 					numberOfLinkedStudents += 1;
 				}
-				if (numberOfLinkedStudents == 3){
+				if (numberOfLinkedStudents >= 3){
 					doubleHash = true;
 				}
-				else{
-					temp->next = inputStudent;
-				}
+				//else{
+				temp->next = inputStudent;
+				//}
 			}
 			cout << "Added student!" << endl;
 		}
@@ -232,7 +232,7 @@ int main(){
 
 			for (int i=0; i<hashLen; i++){//for every student in hash table:
 				current = HashTable[i];
-				if (current != NULL){//makes sure current is a student
+				while (current != NULL){//makes sure current is a student
 					//add current to tempHash
 					if (tempHash[getHashID(current, tempHashLen)] != NULL){ //if rehashed student's new hash is already taken:
 						int lengthOfLinks = 1;
@@ -250,14 +250,14 @@ int main(){
 					}
 					else{ //if rehashed student's new hash in not taken (available):
 						tempHash[getHashID(current, tempHashLen)] = current;
-					}	
+					}
+					Student* tempL = current;
+					current = current->next;
+					tempL->next = NULL;	
 				}
 			}
-			//if works
-			if (not doubleHash){
-				hashLen = tempHashLen;
-				HashTable = tempHash;
-			}
+			hashLen = tempHashLen;
+			HashTable = tempHash;
 		}	
 
 	//After quitVar turns true, program ends
