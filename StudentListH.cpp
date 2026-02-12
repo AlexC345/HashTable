@@ -35,12 +35,12 @@ Student* getRandomStudent(int latestID, char** firstNames, char** lastNames){ //
 	return random;
 }
 
-int getLength(Student** hashTable, int hashLen){
+int getLength(Student** hashTable, int hashLen){ //returns number of students in hash table
 	int numberOfStudents = 0;
-	for (int i = 0; i < hashLen; i++){
+	for (int i=0; i<hashLen; i++){
 		Student* current = hashTable[i];
 		while (current != nullptr){
-			numberOfStudents++;
+			numberOfStudents += 1;
 			current = current->next;
 		}
 	}
@@ -66,9 +66,13 @@ int main(){
 	//get first names and last names array
 	char* firstNames[1000];
 	char* lastNames[1000];
+	for (int i=0; i<1000; i++){ //clear first names list and last names list
+		firstNames[i] = NULL;
+		lastNames[i] = NULL;
+	}
 	
 	int latestID = 100000;
-	srand(static_cast<unsigned int>(time(NULL)));
+	srand(static_cast<unsigned int>(time(NULL)));//the random thingy that makes rand() work
 	int addrNumber;
 	int numberOfLinkedStudents;
 	//get 1000 first names into an array
@@ -83,7 +87,7 @@ int main(){
 		lastNames[i] = new char[1000];
 		lastNameFile >> lastNames[i];
 	}
-	
+	//add, addr, delete, and double hash variables
 	int inputID;
 	bool quitVar = false;
 	int addHashIndex;
@@ -95,7 +99,7 @@ int main(){
 	bool delBreak;
 	Student* delPrev;
 	//Welcome statement
-	cout << "Welcome to Student List Hash Table. Use any of these 5 keywords: ADD, DELETE, PRINT, QUIT, ADDR" << endl;
+	cout << "Welcome to Student List Hash Table. Use any of these 5 keywords: ADD, DELETE, PRINT, QUIT, ADDR, NUM" << endl;
 	while(not quitVar){ //While the program has not quitted yet:
 		cin >> command; //Take in a command and get rid of any excess characters
 		command[6] = '\0';
@@ -103,7 +107,7 @@ int main(){
 		if (strcmp(command, del) == 0){ //If you entered DELETE:
 			cout << "Enter ID of student to delete: "; //Get input
 			cin >> inputID;
-			for (int i=0; i<hashLen; i++){
+			for (int i=0; i<hashLen; i++){//goes through every element in hash table
 				delCur = HashTable[i];
 				
 				delPrev = delCur;
@@ -131,7 +135,7 @@ int main(){
 					}
 				}
 			}
-			if (!delBreak){
+			if (!delBreak){ //if no student with that ID found:
 				cout << "That Student ID doesn't exist!" << endl;	
 			}
 		}
@@ -175,7 +179,7 @@ int main(){
 				if (HashTable[i] != NULL){
 					cout << "H: " << getHashID(HashTable[i], hashLen) << " N: " << HashTable[i]->firstName  << " " << HashTable[i]->lastName << " ID: " << HashTable[i]->ID << " GPA: " << fixed << setprecision(2) << HashTable[i]->GPA << " -> ";
 					temp = HashTable[i];
-					while (temp->next != NULL){
+					while (temp->next != NULL){//prints out all the linked students with the same hash as well
 						temp = temp->next;
 						cout << "H: " << getHashID(HashTable[i], hashLen) << " N: " << temp->firstName  << " " << temp->lastName << " ID: " << temp->ID << " GPA: " << fixed << setprecision(2) << temp->GPA << " -> ";
 					}
@@ -200,7 +204,7 @@ int main(){
 						temp = temp->next;
 						numberOfLinkedStudents += 1;
 					}
-					if (numberOfLinkedStudents >= 3){
+					if (numberOfLinkedStudents >= 3){//if 3 or more linked students:
 						//double hash table length
 						doubleHash = true;
 					}
@@ -212,39 +216,39 @@ int main(){
 			}
 			cout << "Added random student(s)." << endl;
 		}
-		else if (strcmp(command, num) == 0){
-			cout << getLength(HashTable, hashLen);
+		else if (strcmp(command, num) == 0){ //function that counts number of students
+			cout << "Number of students in hash table: " << getLength(HashTable, hashLen) << endl;
 		}
 		else{ //If you entered non of the above:
 			cout << "Unrecognized input. Please try again." << endl;
 		}
 			
-		while(doubleHash){
+		while(doubleHash){//if a student has 3 or more links, double hash table size and rehash
 			doubleHash = false;
 			tempHashLen = tempHashLen * 2;
 			Student** tempHash = new Student*[tempHashLen];
 			nullify(tempHash, tempHashLen);
 			Student* current;
 
-			for (int i=0; i<hashLen; i++){
+			for (int i=0; i<hashLen; i++){//for every student in hash table:
 				current = HashTable[i];
-				if (current != NULL){
+				if (current != NULL){//makes sure current is a student
 					//add current to tempHash
-					if (tempHash[getHashID(current, tempHashLen)] != NULL){
+					if (tempHash[getHashID(current, tempHashLen)] != NULL){ //if rehashed student's new hash is already taken:
 						int lengthOfLinks = 1;
 						Student* temp = tempHash[getHashID(current, tempHashLen)];
 						while (temp->next != NULL){
 							temp = temp->next;
 							lengthOfLinks += 1;
 						}
-						if (lengthOfLinks >= 3){
-							doubleHash = true;
+						if (lengthOfLinks >= 3){//if 3 or more linked students DURING rehashing process:
+							doubleHash = true;//double hash table size and rehash again after
 						}
 						//else{
 						temp->next = current;
 						//}
 					}
-					else{
+					else{ //if rehashed student's new hash in not taken (available):
 						tempHash[getHashID(current, tempHashLen)] = current;
 					}	
 				}
