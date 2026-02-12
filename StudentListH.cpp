@@ -16,23 +16,35 @@ struct Student{ //Student Struct contains 4 variables for every structure
 	Student* next = NULL;
 };
 
-int getHashID(Student* student, int maxLen){
-	return ((int)((float)student->ID * 6.9420) % maxLen);
+int getHashID(Student* student, int maxLen){ //hash function
+	return ((int)((float)student->ID * student->GPA) % maxLen);
 }
 
-void nullify(Student** HashTable, int maxLen){
+void nullify(Student** HashTable, int maxLen){ //clears an array
 	for (int i=0; i<maxLen; i++){
 		HashTable[i] = NULL;
 	}
 }
 
-Student* getRandomStudent(int latestID, char** firstNames, char** lastNames){
+Student* getRandomStudent(int latestID, char** firstNames, char** lastNames){ //generate random student funcion
 	Student *random = new Student();
 	strcpy(random->firstName, firstNames[(rand() % 1000)+1]);
 	strcpy(random->lastName, lastNames[(rand() % 1000)+1]);
-	random->ID = latestID + 1;
+	random->ID = latestID;
 	random->GPA = ((float) (rand()%400)+1)/100;
 	return random;
+}
+
+int getLength(Student** hashTable, int hashLen){
+	int numberOfStudents = 0;
+	for (int i = 0; i < hashLen; i++){
+		Student* current = hashTable[i];
+		while (current != nullptr){
+			numberOfStudents++;
+			current = current->next;
+		}
+	}
+	return numberOfStudents;
 }
 
 int main(){
@@ -48,28 +60,30 @@ int main(){
 	char quit[] = "QUIT";
 	char print[] = "PRINT";
 	char addr[] = "ADDR";
+	char num[] = "NUM";
 
 	char command[100];
 	//get first names and last names array
 	char* firstNames[1000];
 	char* lastNames[1000];
-
+	
 	int latestID = 100000;
+	srand(static_cast<unsigned int>(time(NULL)));
 	int addrNumber;
 	int numberOfLinkedStudents;
-	
+	//get 1000 first names into an array
 	ifstream firstNameFile("firstNames.txt");
 	for (int i=0; i<1000; i++){
 		firstNames[i] = new char[1000];
 		firstNameFile >> firstNames[i];
 	}
-
+	//get 1000 last names into an array
 	ifstream lastNameFile("lastNames.txt");
 	for (int i=0; i<1000; i++){
 		lastNames[i] = new char[1000];
 		lastNameFile >> lastNames[i];
 	}
-
+	
 	int inputID;
 	bool quitVar = false;
 	int addHashIndex;
@@ -77,26 +91,51 @@ int main(){
 	bool doubleHash = false;
 	
 	Student* temp;
+	Student* delCur;
+	bool delBreak;
+	Student* delPrev;
 	//Welcome statement
 	cout << "Welcome to Student List Hash Table. Use any of these 5 keywords: ADD, DELETE, PRINT, QUIT, ADDR" << endl;
 	while(not quitVar){ //While the program has not quitted yet:
 		cin >> command; //Take in a command and get rid of any excess characters
 		command[6] = '\0';
-		/*
+
 		if (strcmp(command, del) == 0){ //If you entered DELETE:
 			cout << "Enter ID of student to delete: "; //Get input
 			cin >> inputID;
-			int i=0;
-			for (Student* stud : HashTable){ //For every student in HashTable:
-				if (stud->ID == inputID){ //If that student has the ID to delete:
-					HashTable.erase(HashTable.begin() + i); //Erase that structure from the vector
-					cout << "Delete successful" << endl;
+			for (int i=0; i<hashLen; i++){
+				delCur = HashTable[i];
+				
+				delPrev = delCur;
+				if (delCur != NULL){
+					while (delCur != NULL){
+						if (delCur->ID == inputID){
+							if (delPrev != delCur){
+								delPrev->next = delCur->next;
+							}
+							else{
+								if (delCur->next == NULL){
+									HashTable[i] = NULL;
+								}
+								else{
+									HashTable[i] = delCur->next;
+								}
+							}
+							delete delCur;
+							delBreak = true;
+							cout << "Delete successful." << endl;
+							break;
+						}
+						delPrev = delCur;
+						delCur = delCur->next;
+					}
 				}
-				i++;
+			}
+			if (!delBreak){
+				cout << "That Student ID doesn't exist!" << endl;	
 			}
 		}
-		*/
-		if (strcmp(command, add) == 0){ //If you entered ADD:
+		else if (strcmp(command, add) == 0){ //If you entered ADD:
 			Student *inputStudent = new Student(); //Creates new input student
 			cout << "Enter first name: " << endl; //Gets input student variables
 			cin >> inputStudent->firstName;
@@ -150,6 +189,7 @@ int main(){
 			for (int i=0; i<addrNumber; i++){ //add addrNumber of random students
 				Student *random = getRandomStudent(latestID, firstNames, lastNames);
 				addHashIndex = getHashID(random, hashLen);
+				latestID += 1;
 				if (HashTable[addHashIndex] == NULL){
 					HashTable[addHashIndex] = random;
 				}
@@ -160,17 +200,20 @@ int main(){
 						temp = temp->next;
 						numberOfLinkedStudents += 1;
 					}
-					if (numberOfLinkedStudents == 3){
+					if (numberOfLinkedStudents >= 3){
 						//double hash table length
 						doubleHash = true;
 					}
-					else{
-						temp->next = random;
-					}
+					temp->next = random;
+					//else{
+					//	temp->next = random;
+					//}
 				}
-				latestID += 1;
 			}
 			cout << "Added random student(s)." << endl;
+		}
+		else if (strcmp(command, num) == 0){
+			cout << getLength(HashTable, hashLen);
 		}
 		else{ //If you entered non of the above:
 			cout << "Unrecognized input. Please try again." << endl;
@@ -185,7 +228,7 @@ int main(){
 
 			for (int i=0; i<hashLen; i++){
 				current = HashTable[i];
-				while(current != NULL){
+				if (current != NULL){
 					//add current to tempHash
 					if (tempHash[getHashID(current, tempHashLen)] != NULL){
 						int lengthOfLinks = 1;
@@ -194,16 +237,16 @@ int main(){
 							temp = temp->next;
 							lengthOfLinks += 1;
 						}
-						if (lengthOfLinks == 3){
+						if (lengthOfLinks >= 3){
 							doubleHash = true;
 						}
-						else{
-							temp->next = current;
-						}
+						//else{
+						temp->next = current;
+						//}
 					}
 					else{
 						tempHash[getHashID(current, tempHashLen)] = current;
-					}
+					}	
 				}
 			}
 			//if works
